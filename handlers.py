@@ -371,6 +371,16 @@ async def get_hedef_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text('İşlem iptal edildi.'); await start(update, context); return ConversationHandler.END
+    
+    # --- YENİ EKLENECEK FONKSİYON ---
+async def cancel_and_programim(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Aktif bir sohbeti (Conversation) iptal eder ve kullanıcıyı 
+    'Programım' menüsüne yönlendirir.
+    """
+    await programim(update, context) # 'programim' fonksiyonunu çağır
+    return ConversationHandler.END
+# --- YENİ EKLENECEK FONKSİYON SONU ---
 
 # --- ADMİN FONKSİYONLARI ---
 async def admin_panel_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
