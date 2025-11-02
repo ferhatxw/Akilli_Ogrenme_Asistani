@@ -35,13 +35,12 @@ async def send_updated_stats(update_or_query_or_message, context: ContextTypes.D
     if isinstance(update_or_query_or_message, CallbackQuery):
         await update_or_query_or_message.edit_message_text(text=stats_text, parse_mode='Markdown', reply_markup=reply_markup)
     else:
-        await context.bot.send_message(
-            chat_id=update_or_query_or_message.effective_chat.id, 
-            text=f"{prefix_text}\n\n{stats_text}", 
-            parse_mode='Markdown', 
-            reply_markup=reply_markup
-        )
-
+            await context.bot.send_message(
+                chat_id=update_or_query_or_message.chat.id, 
+                text=f"{prefix_text}\n\n{stats_text}", 
+                parse_mode='Markdown', 
+                reply_markup=reply_markup
+            )
 # --- YETKİ KONTROL ---
 def is_super_admin(user_id: int, context: ContextTypes.DEFAULT_TYPE) -> bool:
     return user_id == context.bot_data.get("SUPER_ADMIN_ID")
@@ -539,6 +538,7 @@ async def list_users_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.effective_message.reply_text("Kullanıcı listesi 4096 karakter sınırını aşıyor.")
     else:
         await update.effective_message.reply_text(message, parse_mode='Markdown')
+
 
 
 
