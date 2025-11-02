@@ -372,7 +372,6 @@ async def get_hedef_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text('İşlem iptal edildi.'); await start(update, context); return ConversationHandler.END
     
-    # --- YENİ EKLENECEK FONKSİYON ---
 async def cancel_and_programim(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """
     Aktif bir sohbeti (Conversation) iptal eder ve kullanıcıyı 
@@ -380,7 +379,30 @@ async def cancel_and_programim(update: Update, context: ContextTypes.DEFAULT_TYP
     """
     await programim(update, context) # 'programim' fonksiyonunu çağır
     return ConversationHandler.END
-# --- YENİ EKLENECEK FONKSİYON SONU ---
+    
+    # --- YENİ EKLENECEK ACİL ÇÖZÜM FONKSİYONU ---
+
+async def unhandled_callback_query_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Bot bir sohbet durumundayken (örn: metin beklerken) 
+    basılan ve beklenmeyen tüm butonları yakalar.
+    Kilitlenmeyi önler.
+    """
+    query = update.callback_query
+    await query.answer()
+    
+    # Kullanıcıyı uyar
+    await query.message.reply_text(
+        "⚠️ **İşlem Çakışması!**\n\n"
+        "Görünüşe göre bir işlemi (örn. 'Sınav Adı' girme) tamamlamadan başka bir butona bastınız.\n\n"
+        "Lütfen önce o işlemi tamamlayın veya /cancel yazarak mevcut işlemi iptal edin.",
+        parse_mode='Markdown'
+    )
+    
+    # Mevcut durumda kalmaya devam et (hiçbir şeyi bozma)
+    # Hangi state'te olduğunu bilmediğimiz için 'None' veya 'PASS' güvenlidir.
+    return None 
+# --- YENİ FONKSİYON SONU ---
 
 # --- ADMİN FONKSİYONLARI ---
 async def admin_panel_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -519,4 +541,5 @@ async def list_users_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.effective_message.reply_text("Kullanıcı listesi 4096 karakter sınırını aşıyor.")
     else:
         await update.effective_message.reply_text(message, parse_mode='Markdown')
+
 
