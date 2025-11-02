@@ -394,12 +394,13 @@ async def backup_database_command(update: Update, context: ContextTypes.DEFAULT_
     user_id = update.effective_user.id
     if not is_super_admin(user_id, context):
         await update.effective_message.reply_text("Bu komutu sadece Süper Admin kullanabilir."); return
-    try:
-        await context.bot.send_document(chat_id=user_id, document=open(db.DB_PATH, 'rb'), filename='ders_takip_yedeği.db', caption="Veritabanı Yedeği") # DB_PATH olarak güncellendi
-    except FileNotFoundError:
-        await update.effective_message.reply_text("❌ Yedek gönderilemedi: Veritabanı dosyası bulunamadı.")
-    except Exception as e:
-        await update.effective_message.reply_text(f"❌ Yedek gönderilemedi: {e}")
+    
+    await update.effective_message.reply_text(
+        "Veritabanı yedeği artık Neon (PostgreSQL) bulut sunucusunda tutulmaktadır.\n\n"
+        "Yedek almak için [Neon Dashboard](httpsa://console.neon.tech/app/projects) adresine gidin, "
+        "projenizi seçin ve 'Backup & Restore' (Yedekle & Geri Yükle) menüsünü kullanın.",
+        parse_mode='Markdown'
+    )
 
 async def add_admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
@@ -508,3 +509,4 @@ async def list_users_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.effective_message.reply_text("Kullanıcı listesi 4096 karakter sınırını aşıyor.")
     else:
         await update.effective_message.reply_text(message, parse_mode='Markdown')
+
