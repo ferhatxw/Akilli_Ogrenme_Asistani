@@ -1,4 +1,4 @@
-# handlers.py (GÜNE ÖZEL NOT ÖZELLİĞİ EKLENDİ)
+# handlers.py (TÜM ÇÖKME, KİLİTLENME VE TEKRARLAMA HATALARI DÜZELTİLMİŞ NİHAİ HAL)
 
 from telegram import Update, InputFile, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 from telegram.ext import (
@@ -14,7 +14,7 @@ import random
 GET_SINAV_NAME, GET_DERS_NAME, GET_KONU_NAME, EDIT_DERS_NAME, EDIT_KONU_NAME, EDIT_SINAV_NAME, GET_NOTE_CONTENT, \
 GET_ADD_DOGRU, GET_ADD_YANLIS, GET_ADD_BOS, \
 GET_EDIT_DOGRU, GET_EDIT_YANLIS, GET_EDIT_BOS, \
-GET_HEDEF, GET_RITUEL_CONTENT, GET_GUN_NOT_CONTENT = range(16) # GÜNCELLENDİ
+GET_HEDEF, GET_RITUEL_CONTENT, GET_GUN_NOT_CONTENT = range(16)
 
 # --- YARDIMCI FONKSİYON ---
 async def send_updated_stats(update_or_query_or_message, context: ContextTypes.DEFAULT_TYPE, konu_id: int, prefix_text: str):
@@ -35,12 +35,14 @@ async def send_updated_stats(update_or_query_or_message, context: ContextTypes.D
     if isinstance(update_or_query_or_message, CallbackQuery):
         await update_or_query_or_message.edit_message_text(text=stats_text, parse_mode='Markdown', reply_markup=reply_markup)
     else:
-            await context.bot.send_message(
-                chat_id=update_or_query_or_message.chat.id, 
-                text=f"{prefix_text}\n\n{stats_text}", 
-                parse_mode='Markdown', 
-                reply_markup=reply_markup
-            )
+        # --- DÜZELTME (.effective_chat.id -> .chat.id) ---
+        await context.bot.send_message(
+            chat_id=update_or_query_or_message.chat.id, 
+            text=f"{prefix_text}\n\n{stats_text}", 
+            parse_mode='Markdown', 
+            reply_markup=reply_markup
+        )
+
 # --- YETKİ KONTROL ---
 def is_super_admin(user_id: int, context: ContextTypes.DEFAULT_TYPE) -> bool:
     return user_id == context.bot_data.get("SUPER_ADMIN_ID")
@@ -59,10 +61,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if update.callback_query:
             await update.callback_query.edit_message_text(text=message_text, reply_markup=inline_keyboard)
         else:
-            # DÜZELTME: 'if' kontrolü kaldırıldı. Artık /start komutu her zaman
-            # sabit klavyeyi de göndererek kaybolmasını engeller.
             await update.message.reply_text("Kontrol paneli:", reply_markup=persistent_keyboard)
-            context.user_data['persistent_keyboard_sent'] = True # Hafızada tutmaya devam edebiliriz, sorun değil.
+            context.user_data['persistent_keyboard_sent'] = True
             await update.message.reply_text(text=message_text, reply_markup=inline_keyboard)
     except BadRequest as e:
         if "Message is not modified" in str(e): pass
@@ -78,12 +78,14 @@ async def programim(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if "Message is not modified" in str(e): pass
         else: raise e
 
+# --- DÜZELTME ('else' bloğu kaldırıldı) ---
 async def greet_and_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message_text = update.message.text
     if message_text in ['📚 Panelim', 'Merhaba', 'Hi', 'Hello', 'Başla', '.']:
         await start(update, context)
     elif message_text == '🗓️ Programım':
         await programim(update, context)
+    # 'else' bloğu (Anlayamadım...) buradan kaldırıldı.
 
 async def gizlilik(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.effective_message.reply_text("Gizlilik Politikası: Bu bot, çalışma ilerlemenizi takip etmek amacıyla girdiğiniz verileri saklar. Bu veriler tamamen size özeldir ve sizin onayınız olmadan başka kimseyle paylaşılmaz.")
@@ -193,7 +195,6 @@ async def navigation_button_handler(update: Update, context: ContextTypes.DEFAUL
             await query.edit_message_text(text=f"🗑️ Ritüel silindi.\n\n{text}", parse_mode='Markdown', reply_markup=reply_markup)
         elif data == "program_main": await programim(update, context)
         
-        # YENİ EKLENEN BLOKLAR
         elif data.startswith("program_not_menu_"):
             gun_index = int(data.split("_")[3])
             gun_adi = gunler[gun_index]
@@ -283,8 +284,6 @@ async def conversation_entry_handler(update: Update, context: ContextTypes.DEFAU
     elif data.startswith('edit_stats_'): konu_id = int(data.split('_')[2]); context.user_data['current_konu_id'] = konu_id; await query.message.reply_text("✍️ Yeni Doğru (toplam):"); return GET_EDIT_DOGRU
     elif data.startswith('set_hedef_'): konu_id = int(data.split('_')[2]); context.user_data['current_konu_id'] = konu_id; await query.message.reply_text("🎯 Yeni Hedef:"); return GET_HEDEF
     elif data == 'program_add_rituel': await query.message.reply_text("Eklemek istediğin ritüeli yaz:"); return GET_RITUEL_CONTENT
-    
-    # YENİ EKLENDİ
     elif data.startswith('program_add_gunnot_'):
         gun_index = int(data.split('_')[3])
         context.user_data['current_gun'] = gun_index
@@ -299,13 +298,12 @@ async def get_rituel_content_handler(update: Update, context: ContextTypes.DEFAU
     text, reply_markup = kb.get_rituel_menu(user_id)
     await update.message.reply_text(text=text, parse_mode='Markdown', reply_markup=reply_markup); return ConversationHandler.END
 
-# YENİ EKLENEN FONKSİYON
 async def get_gun_not_content_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.message.from_user.id
     icerik = update.message.text
     gun_index = context.user_data.get('current_gun')
     
-    if gun_index is None: # Güvenlik kontrolü
+    if gun_index is None:
         await update.message.reply_text("Hata: Hangi gün olduğu anlaşılamadı. Lütfen tekrar deneyin.")
         return ConversationHandler.END
         
@@ -341,34 +339,118 @@ async def get_note_content_handler(update: Update, context: ContextTypes.DEFAULT
     konu_adi = db.get_konu_adi(konu_id); reply_markup = kb.get_notes_menu_keyboard(konu_id)
     await update.message.reply_text(text=f"📝 Notlar: {konu_adi}", reply_markup=reply_markup); return ConversationHandler.END
 
+# --- DÜZELTME (try-except ve hafıza temizleme eklendi) ---
 async def get_add_dogru_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    context.user_data['add_dogru'] = int(update.message.text); await update.message.reply_text("❌ Yanlış sayısı:"); return GET_ADD_YANLIS
+    try:
+        context.user_data['add_dogru'] = int(update.message.text)
+        await update.message.reply_text("❌ Yanlış sayısı:")
+        return GET_ADD_YANLIS
+    except ValueError:
+        await update.message.reply_text("Lütfen bir sayı girin. ✔️ Doğru sayısı:")
+        return GET_ADD_DOGRU # Aynı durumda kal
+
 async def get_add_yanlis_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    context.user_data['add_yanlis'] = int(update.message.text); await update.message.reply_text("➖ Boş sayısı (yoksa 0):"); return GET_ADD_BOS
+    try:
+        context.user_data['add_yanlis'] = int(update.message.text)
+        await update.message.reply_text("➖ Boş sayısı (yoksa 0):")
+        return GET_ADD_BOS
+    except ValueError:
+        await update.message.reply_text("Lütfen bir sayı girin. ❌ Yanlış sayısı:")
+        return GET_ADD_YANLIS # Aynı durumda kal
+
 async def get_add_bos_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    context.user_data['add_bos'] = int(update.message.text); konu_id = context.user_data.get('current_konu_id')
-    dogru, yanlis, bos = context.user_data.get('add_dogru', 0), context.user_data.get('add_yanlis', 0), context.user_data.get('add_bos', 0)
-    db.add_soru_stats(konu_id, dogru, yanlis, bos); await update.message.reply_text(f"✅ Eklendi!")
-    await send_updated_stats(update.message, context, konu_id, "📊 **GÜNCEL İstatistikler**"); return ConversationHandler.END
+    try:
+        context.user_data['add_bos'] = int(update.message.text)
+    except ValueError:
+        await update.message.reply_text("Lütfen bir sayı girin. ➖ Boş sayısı (yoksa 0):")
+        return GET_ADD_BOS # Aynı durumda kal
 
+    konu_id = context.user_data.get('current_konu_id')
+    dogru = context.user_data.get('add_dogru', 0)
+    yanlis = context.user_data.get('add_yanlis', 0)
+    bos = context.user_data.get('add_bos', 0)
+    
+    db.add_soru_stats(konu_id, dogru, yanlis, bos)
+    await update.message.reply_text(f"✅ Eklendi!")
+    
+    await send_updated_stats(update.message, context, konu_id, "📊 **GÜNCEL İstatistikler**")
+    
+    # Hafıza Temizleme (Tekrar eklemeyi önler)
+    try:
+        del context.user_data['add_dogru']
+        del context.user_data['add_yanlis']
+        del context.user_data['add_bos']
+    except KeyError:
+        pass 
+
+    return ConversationHandler.END
+
+# --- DÜZELTME (try-except ve hafıza temizleme eklendi) ---
 async def get_edit_dogru_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    context.user_data['edit_dogru'] = int(update.message.text); await update.message.reply_text("✍️ Yeni Yanlış (toplam):"); return GET_EDIT_YANLIS
-async def get_edit_yanlis_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    context.user_data['edit_yanlis'] = int(update.message.text); await update.message.reply_text("✍️ Yeni Boş (toplam):"); return GET_EDIT_BOS
-async def get_edit_bos_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    context.user_data['edit_bos'] = int(update.message.text); konu_id = context.user_data.get('current_konu_id')
-    dogru, yanlis, bos = context.user_data.get('edit_dogru', 0), context.user_data.get('edit_yanlis', 0), context.user_data.get('edit_bos', 0)
-    db.update_soru_stats(konu_id, dogru, yanlis, bos); await update.message.reply_text(f"✅ Güncellendi!")
-    await send_updated_stats(update.message, context, konu_id, "📊 **GÜNCEL İstatistikler**"); return ConversationHandler.END
+    try:
+        context.user_data['edit_dogru'] = int(update.message.text)
+        await update.message.reply_text("✍️ Yeni Yanlış (toplam):")
+        return GET_EDIT_YANLIS
+    except ValueError:
+        await update.message.reply_text("Lütfen bir sayı girin. ✍️ Yeni Doğru (toplam):")
+        return GET_EDIT_DOGRU # Aynı durumda kal
 
+async def get_edit_yanlis_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    try:
+        context.user_data['edit_yanlis'] = int(update.message.text)
+        await update.message.reply_text("✍️ Yeni Boş (toplam):")
+        return GET_EDIT_BOS
+    except ValueError:
+        await update.message.reply_text("Lütfen bir sayı girin. ✍️ Yeni Yanlış (toplam):")
+        return GET_EDIT_YANLIS # Aynı durumda kal
+
+async def get_edit_bos_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    try:
+        context.user_data['edit_bos'] = int(update.message.text)
+    except ValueError:
+        await update.message.reply_text("Lütfen bir sayı girin. ✍️ Yeni Boş (toplam):")
+        return GET_EDIT_BOS # Aynı durumda kal
+
+    konu_id = context.user_data.get('current_konu_id')
+    dogru = context.user_data.get('edit_dogru', 0)
+    yanlis = context.user_data.get('edit_yanlis', 0)
+    bos = context.user_data.get('edit_bos', 0)
+    
+    db.update_soru_stats(konu_id, dogru, yanlis, bos)
+    await update.message.reply_text(f"✅ Güncellendi!")
+    
+    await send_updated_stats(update.message, context, konu_id, "📊 **GÜNCEL İstatistikler**")
+
+    # Hafıza Temizleme (Tekrar eklemeyi önler)
+    try:
+        del context.user_data['edit_dogru']
+        del context.user_data['edit_yanlis']
+        del context.user_data['edit_bos']
+    except KeyError:
+        pass 
+    
+    return ConversationHandler.END
+
+# --- DÜZELTME (try-except eklendi) ---
 async def get_hedef_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    konu_id = context.user_data.get('current_konu_id'); hedef = int(update.message.text)
-    db.set_hedef_soru(konu_id, hedef); await update.message.reply_text(f"✅ Yeni hedef ayarlandı!")
-    await send_updated_stats(update.message, context, konu_id, "📊 **GÜNCEL İstatistikler**"); return ConversationHandler.END
+    try:
+        hedef = int(update.message.text)
+    except ValueError:
+        await update.message.reply_text("Lütfen bir sayı girin. 🎯 Yeni Hedef:")
+        return GET_HEDEF # Aynı durumda kal
+        
+    konu_id = context.user_data.get('current_konu_id')
+    db.set_hedef_soru(konu_id, hedef)
+    await update.message.reply_text(f"✅ Yeni hedef ayarlandı!")
+    
+    await send_updated_stats(update.message, context, konu_id, "📊 **GÜNCEL İstatistikler**")
+    
+    return ConversationHandler.END
 
 async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text('İşlem iptal edildi.'); await start(update, context); return ConversationHandler.END
-    
+
+# --- KİLİTLENMEYİ ÇÖZEN FONKSİYONLAR ---
 async def cancel_and_programim(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """
     Aktif bir sohbeti (Conversation) iptal eder ve kullanıcıyı 
@@ -376,8 +458,6 @@ async def cancel_and_programim(update: Update, context: ContextTypes.DEFAULT_TYP
     """
     await programim(update, context) # 'programim' fonksiyonunu çağır
     return ConversationHandler.END
-    
-    # --- YENİ EKLENECEK ACİL ÇÖZÜM FONKSİYONU ---
 
 async def unhandled_callback_query_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """
@@ -388,7 +468,6 @@ async def unhandled_callback_query_handler(update: Update, context: ContextTypes
     query = update.callback_query
     await query.answer()
     
-    # Kullanıcıyı uyar
     await query.message.reply_text(
         "⚠️ **İşlem Çakışması!**\n\n"
         "Görünüşe göre bir işlemi (örn. 'Sınav Adı' girme) tamamlamadan başka bir butona bastınız.\n\n"
@@ -396,10 +475,9 @@ async def unhandled_callback_query_handler(update: Update, context: ContextTypes
         parse_mode='Markdown'
     )
     
-    # Mevcut durumda kalmaya devam et (hiçbir şeyi bozma)
-    # Hangi state'te olduğunu bilmediğimiz için 'None' veya 'PASS' güvenlidir.
     return None 
-# --- YENİ FONKSİYON SONU ---
+# --- KİLİTLENME ÇÖZÜMLERİ SONU ---
+
 
 # --- ADMİN FONKSİYONLARI ---
 async def admin_panel_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -419,6 +497,7 @@ async def admin_panel_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     )
     await update.effective_message.reply_text(text, parse_mode='Markdown')
 
+# --- DÜZELTME (Neon için güncellendi) ---
 async def backup_database_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
     if not is_super_admin(user_id, context):
@@ -538,7 +617,3 @@ async def list_users_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.effective_message.reply_text("Kullanıcı listesi 4096 karakter sınırını aşıyor.")
     else:
         await update.effective_message.reply_text(message, parse_mode='Markdown')
-
-
-
-
