@@ -85,8 +85,6 @@ async def greet_and_start(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await start(update, context)
     elif message_text == '🗓️ Programım':
         await programim(update, context)
-    else:
-        await update.message.reply_text("Anlayamadım, lütfen aşağıdaki butonları kullan.")
 
 async def gizlilik(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.effective_message.reply_text("Gizlilik Politikası: Bu bot, çalışma ilerlemenizi takip etmek amacıyla girdiğiniz verileri saklar. Bu veriler tamamen size özeldir ve sizin onayınız olmadan başka kimseyle paylaşılmaz.")
@@ -541,5 +539,6 @@ async def list_users_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.effective_message.reply_text("Kullanıcı listesi 4096 karakter sınırını aşıyor.")
     else:
         await update.effective_message.reply_text(message, parse_mode='Markdown')
+
 
 
