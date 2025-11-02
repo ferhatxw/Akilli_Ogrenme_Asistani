@@ -1,0 +1,10 @@
+# Veritabanı dosyaları
+ders_takip.db
+ders_takip.db-journal
+
+# Python önbelleği
+__pycache__/
+
+# Sanal ortam
+.venv/
+venv/
